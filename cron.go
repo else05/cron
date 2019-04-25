@@ -53,6 +53,9 @@ type Entry struct {
 
 	// Unique name to identify the Entry so as to be able to remove it later.
 	Name string
+
+	// 随机延迟的范围,以DelayRange为最大范围生成一个随机数R，让下一次执行延迟R秒，单位 秒 ，范围 (0,DelayRange)
+	DelayRange int
 }
 
 // byTime is a wrapper for sorting the entry array by time
@@ -99,34 +102,51 @@ type FuncJob func()
 func (f FuncJob) Run() { f() }
 
 // AddFunc adds a func to the Cron to be run on the given schedule.
-func (c *Cron) AddFunc(name string, spec string, cmd func()) error {
-	return c.AddJob(name, spec, FuncJob(cmd))
+func (c *Cron) AddNameFunc(name string, spec string, cmd func()) error {
+	return c.AddNameJob(name, spec, FuncJob(cmd))
+}
+func (c *Cron) AddFunc(spec string, cmd func()) error {
+	return c.AddJob(spec, FuncJob(cmd))
+}
+func (c *Cron) AddDelayFunc(spec string, delayRange int, cmd func()) error {
+	return c.AddDelayJob(spec, delayRange, FuncJob(cmd))
 }
 
 // AddJob adds a Job to the Cron to be run on the given schedule.
-func (c *Cron) AddJob(name string, spec string, cmd Job) error {
+func (c *Cron) AddJob(spec string, cmd Job) error {
+	return c.AddNameJob("", spec, cmd)
+}
+
+func (c *Cron) AddNameJob(name string, spec string, cmd Job) error {
 	schedule, err := Parse(spec)
 	if err != nil {
 		return err
 	}
-	c.Schedule(name, schedule, cmd)
+	c.NameAndDelaySchedule(name, schedule, 0, cmd)
+	return nil
+}
+
+func (c *Cron) AddDelayJob(spec string, delayRange int, cmd Job) error {
+	schedule, err := Parse(spec)
+	if err != nil {
+		return err
+	}
+	c.NameAndDelaySchedule("", schedule, 0, cmd)
 	return nil
 }
 
 // RemoveJob removes a Job from the Cron based on name.
 func (c *Cron) RemoveJob(name string) {
-	if !c.running {
-		i := pos(&c.entries, name)
-
-		if i == -1 {
-			return
-		}
-
-		c.entries = removeEntry(c.entries, i)
+	if c.running {
+		c.remove <- name
 		return
 	}
 
-	c.remove <- name
+	i := pos(c.entries, name)
+	if i == -1 {
+		return
+	}
+	c.entries = removeEntry(c.entries, i)
 }
 
 func removeEntry(entries []*Entry, index int) []*Entry {
@@ -139,8 +159,8 @@ func removeEntry(entries []*Entry, index int) []*Entry {
 	return target
 }
 
-func pos(entrySlice *[]*Entry, name string) int {
-	for p, e := range *entrySlice {
+func pos(entrySlice []*Entry, name string) int {
+	for p, e := range entrySlice {
 		if e.Name == name {
 			return p
 		}
@@ -149,11 +169,16 @@ func pos(entrySlice *[]*Entry, name string) int {
 }
 
 // Schedule adds a Job to the Cron to be run on the given schedule.
-func (c *Cron) Schedule(name string, schedule Schedule, cmd Job) {
+func (c *Cron) Schedule(schedule Schedule, cmd Job) {
+	c.NameAndDelaySchedule("", schedule, 0, cmd)
+}
+
+func (c *Cron) NameAndDelaySchedule(name string, schedule Schedule, delayRange int, cmd Job) {
 	entry := &Entry{
-		Schedule: schedule,
-		Job:      cmd,
-		Name:     name,
+		Schedule:   schedule,
+		Job:        cmd,
+		Name:       name,
+		DelayRange: delayRange,
 	}
 	if !c.running {
 		c.entries = append(c.entries, entry)
@@ -214,7 +239,7 @@ func (c *Cron) run() {
 	// Figure out the next activation times for each entry.
 	now := c.now()
 	for _, entry := range c.entries {
-		entry.Next = entry.Schedule.Next(now)
+		entry.Next = entry.Schedule.RandomNext(now, entry.DelayRange)
 	}
 
 	for {
@@ -241,24 +266,25 @@ func (c *Cron) run() {
 					}
 					go c.runWithRecovery(e.Job)
 					e.Prev = e.Next
-					e.Next = e.Schedule.Next(now)
+					e.Next = e.Schedule.RandomNext(now, e.DelayRange)
 				}
 
 			case newEntry := <-c.add:
-				i := pos(&c.entries, newEntry.Name)
-				if i != -1 {
+				if newEntry.Name != "" && pos(c.entries, newEntry.Name) != -1 {
 					continue // 已经存在同名任务
 				}
+
 				timer.Stop()
 				now = c.now()
-				newEntry.Next = newEntry.Schedule.Next(now)
+				newEntry.Next = newEntry.Schedule.RandomNext(now, newEntry.DelayRange)
 				c.entries = append(c.entries, newEntry)
 
 			case name := <-c.remove:
-				i := pos(&c.entries, name)
+				i := pos(c.entries, name)
 				if i == -1 {
 					continue
 				}
+				timer.Stop()
 				c.entries = removeEntry(c.entries, i)
 
 			case <-c.snapshot:

@@ -2,7 +2,6 @@ package cron
 
 import (
 	"crypto/rand"
-	"fmt"
 	"math/big"
 	"time"
 )
@@ -70,8 +69,8 @@ func (s *SpecSchedule) RandomNext(t time.Time, delayRange int) time.Time {
 	// of the field list (since it is necessary to re-verify previous field
 	// values)
 
-	if delayRange < -82800 || delayRange > 82800 {
-		panic("时间不能超过(-82800,82800)秒（24H）")
+	if delayRange < 0 || delayRange > 82800 {
+		panic("时间不能超过(0,82800)秒（24H）")
 	}
 
 	// Start at the earliest possible time (the upcoming second).
@@ -157,11 +156,11 @@ WRAP:
 	if delayRange != 0 {
 		// 生成伪随机数[0,delaySeconds)
 		//rand.NewSource(time.Now().Unix()) // TODO 协程不安全
-		//delaySecond := rand.Intn(delayRange) // TODO 只返回正数
-		delaySecond, _ := rand.Int(rand.Reader, big.NewInt(5))
-		fmt.Println(t.Format("2006-01-02T15:04:05Z07:00"))
-		t = t.Add(time.Second * time.Duration(delaySecond.Int64())) // TODO 不知道能不能支持负数
-		fmt.Println(delayRange, delaySecond, t.Format("2006-01-02T15:04:05Z07:00"))
+		//delaySecond := rand.Intn(delayRange)
+		delaySecond, _ := rand.Int(rand.Reader, big.NewInt(int64(delayRange)))
+		//fmt.Println(t.Format("2006-01-02T15:04:05Z07:00"))
+		t = t.Add(time.Second * time.Duration(delaySecond.Int64()))
+		//fmt.Println(delayRange, delaySecond, t.Format("2006-01-02T15:04:05Z07:00"))
 	}
 
 	return t
