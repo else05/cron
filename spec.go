@@ -1,6 +1,11 @@
 package cron
 
-import "time"
+import (
+	"crypto/rand"
+	"fmt"
+	"math/big"
+	"time"
+)
 
 // SpecSchedule specifies a duty cycle (to the second granularity), based on a
 // traditional crontab specification. It is computed initially and stored as bit sets.
@@ -53,6 +58,10 @@ const (
 // Next returns the next time this schedule is activated, greater than the given
 // time.  If no time can be found to satisfy the schedule, return the zero time.
 func (s *SpecSchedule) Next(t time.Time) time.Time {
+	return s.RandomNext(t, 0)
+}
+
+func (s *SpecSchedule) RandomNext(t time.Time, delayRange int) time.Time {
 	// General approach:
 	// For Month, Day, Hour, Minute, Second:
 	// Check if the time value matches.  If yes, continue to the next field.
@@ -60,6 +69,10 @@ func (s *SpecSchedule) Next(t time.Time) time.Time {
 	// While incrementing the field, a wrap-around brings it back to the beginning
 	// of the field list (since it is necessary to re-verify previous field
 	// values)
+
+	if delayRange < -82800 || delayRange > 82800 {
+		panic("时间不能超过(-82800,82800)秒（24H）")
+	}
 
 	// Start at the earliest possible time (the upcoming second).
 	t = t.Add(1*time.Second - time.Duration(t.Nanosecond())*time.Nanosecond)
@@ -139,6 +152,16 @@ WRAP:
 		if t.Second() == 0 {
 			goto WRAP
 		}
+	}
+
+	if delayRange != 0 {
+		// 生成伪随机数[0,delaySeconds)
+		//rand.NewSource(time.Now().Unix()) // TODO 协程不安全
+		//delaySecond := rand.Intn(delayRange) // TODO 只返回正数
+		delaySecond, _ := rand.Int(rand.Reader, big.NewInt(5))
+		fmt.Println(t.Format("2006-01-02T15:04:05Z07:00"))
+		t = t.Add(time.Second * time.Duration(delaySecond.Int64())) // TODO 不知道能不能支持负数
+		fmt.Println(delayRange, delaySecond, t.Format("2006-01-02T15:04:05Z07:00"))
 	}
 
 	return t

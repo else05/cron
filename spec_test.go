@@ -1,6 +1,9 @@
 package cron
 
 import (
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"testing"
 	"time"
 )
@@ -164,6 +167,34 @@ func TestNext(t *testing.T) {
 			t.Errorf("%s, \"%s\": (expected) %v != %v (actual)", c.time, c.spec, expected, actual)
 		}
 	}
+}
+
+func TestRandomNext(t *testing.T) {
+
+	delaySecond, _ := rand.Int(rand.Reader, big.NewInt(5))
+	fmt.Println(delaySecond)
+	delaySecond, _ = rand.Int(rand.Reader, big.NewInt(5))
+	fmt.Println(delaySecond)
+
+	sched, err := Parse("0/5 * * * * ?")
+	if err != nil {
+		t.Error(err)
+	}
+	actual := sched.RandomNext(time.Now(), 6)
+	fmt.Println(actual)
+
+	//for _, c := range runs {
+	//	sched, err := Parse(c.spec)
+	//	if err != nil {
+	//		t.Error(err)
+	//		continue
+	//	}
+	//	actual := sched.Next(getTime(c.time))
+	//	expected := getTime(c.expected)
+	//	if !actual.Equal(expected) {
+	//		t.Errorf("%s, \"%s\": (expected) %v != %v (actual)", c.time, c.spec, expected, actual)
+	//	}
+	//}
 }
 
 func TestErrors(t *testing.T) {

@@ -25,3 +25,7 @@ func Every(duration time.Duration) ConstantDelaySchedule {
 func (schedule ConstantDelaySchedule) Next(t time.Time) time.Time {
 	return t.Add(schedule.Delay - time.Duration(t.Nanosecond())*time.Nanosecond)
 }
+
+func (schedule ConstantDelaySchedule) RandomNext(t time.Time, delayRange int) time.Time {
+	return t.Add(schedule.Delay - time.Duration(t.Nanosecond())*time.Nanosecond)
+}
