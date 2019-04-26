@@ -153,14 +153,15 @@ WRAP:
 		}
 	}
 
-	if delayRange != 0 {
+	if delayRange > 0 {
 		// 生成伪随机数[0,delaySeconds)
-		//rand.NewSource(time.Now().Unix()) // TODO 协程不安全
-		//delaySecond := rand.Intn(delayRange)
+		//rand.NewSource(time.Now().Unix()) // 协程不安全
+		//delaySecond := rand.Intn(delayRange) //  只返回正数
 		delaySecond, _ := rand.Int(rand.Reader, big.NewInt(int64(delayRange)))
-		//fmt.Println(t.Format("2006-01-02T15:04:05Z07:00"))
 		t = t.Add(time.Second * time.Duration(delaySecond.Int64()))
-		//fmt.Println(delayRange, delaySecond, t.Format("2006-01-02T15:04:05Z07:00"))
+		//fmt.Printf("范围：%v  随机秒数：%v  旧时间：%v  新时间：%v \n", delayRange, delaySecond,
+		//	t.Format("15:04:05"),
+		//	n.Format("15:04:05"))
 	}
 
 	return t

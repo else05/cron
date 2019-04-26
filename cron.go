@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"errors"
 	"log"
 	"runtime"
 	"sort"
@@ -109,6 +110,9 @@ func (c *Cron) AddFunc(spec string, cmd func()) error {
 	return c.AddJob(spec, FuncJob(cmd))
 }
 func (c *Cron) AddDelayFunc(spec string, delayRange int, cmd func()) error {
+	if delayRange < 0 || delayRange > 82800 {
+		return errors.New("时间不能超过(0,82800)秒（24H）")
+	}
 	return c.AddDelayJob(spec, delayRange, FuncJob(cmd))
 }
 
@@ -127,6 +131,9 @@ func (c *Cron) AddNameJob(name string, spec string, cmd Job) error {
 }
 
 func (c *Cron) AddDelayJob(spec string, delayRange int, cmd Job) error {
+	if delayRange < 0 || delayRange > 82800 {
+		return errors.New("时间不能超过(0,82800)秒（24H）")
+	}
 	schedule, err := Parse(spec)
 	if err != nil {
 		return err
@@ -174,6 +181,9 @@ func (c *Cron) Schedule(schedule Schedule, cmd Job) {
 }
 
 func (c *Cron) NameAndDelaySchedule(name string, schedule Schedule, delayRange int, cmd Job) {
+	if delayRange < 0 || delayRange > 82800 {
+		delayRange = 0
+	}
 	entry := &Entry{
 		Schedule:   schedule,
 		Job:        cmd,

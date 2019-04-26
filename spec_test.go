@@ -1,9 +1,7 @@
 package cron
 
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
 	"testing"
 	"time"
 )
@@ -171,16 +169,15 @@ func TestNext(t *testing.T) {
 
 func TestRandomNext(t *testing.T) {
 
-	delaySecond, _ := rand.Int(rand.Reader, big.NewInt(5))
-	fmt.Println(delaySecond)
-	delaySecond, _ = rand.Int(rand.Reader, big.NewInt(5))
-	fmt.Println(delaySecond)
-
-	sched, err := Parse("0/5 * * * * ?")
+	sched, err := Parse("0 * * * * ?")
 	if err != nil {
 		t.Error(err)
 	}
-	actual := sched.RandomNext(time.Now(), 6)
+	var actual time.Time
+	newT, _ := time.Parse("2016-01-02 15:04:05", "2018-04-23 00:00:00")
+	for i := 0; i < 20; i++ {
+		actual = sched.RandomNext(newT, int((time.Hour * 1).Seconds()))
+	}
 	fmt.Println(actual)
 
 	//for _, c := range runs {
