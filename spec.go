@@ -70,7 +70,7 @@ func (s *SpecSchedule) RandomNext(t time.Time, delayRange int) time.Time {
 	// values)
 
 	if delayRange < 0 || delayRange > 82800 {
-		panic("时间不能超过(0,82800)秒（24H）")
+		panic("delayRange cannot exceed 0-82800 second.（24H）")
 	}
 
 	// Start at the earliest possible time (the upcoming second).

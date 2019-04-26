@@ -111,7 +111,7 @@ func (c *Cron) AddFunc(spec string, cmd func()) error {
 }
 func (c *Cron) AddDelayFunc(spec string, delayRange int, cmd func()) error {
 	if delayRange < 0 || delayRange > 82800 {
-		return errors.New("时间不能超过(0,82800)秒（24H）")
+		return errors.New("delayRange cannot exceed 0-82800 second.（24H）")
 	}
 	return c.AddDelayJob(spec, delayRange, FuncJob(cmd))
 }
@@ -132,7 +132,7 @@ func (c *Cron) AddNameJob(name string, spec string, cmd Job) error {
 
 func (c *Cron) AddDelayJob(spec string, delayRange int, cmd Job) error {
 	if delayRange < 0 || delayRange > 82800 {
-		return errors.New("时间不能超过(0,82800)秒（24H）")
+		return errors.New("delayRange cannot exceed 0-82800 second.（24H）")
 	}
 	schedule, err := Parse(spec)
 	if err != nil {
