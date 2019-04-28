@@ -158,10 +158,11 @@ WRAP:
 		//rand.NewSource(time.Now().Unix()) // 协程不安全
 		//delaySecond := rand.Intn(delayRange) //  只返回正数
 		delaySecond, _ := rand.Int(rand.Reader, big.NewInt(int64(delayRange)))
+		//o := t
 		t = t.Add(time.Second * time.Duration(delaySecond.Int64()))
 		//fmt.Printf("范围：%v  随机秒数：%v  旧时间：%v  新时间：%v \n", delayRange, delaySecond,
-		//	t.Format("15:04:05"),
-		//	n.Format("15:04:05"))
+		//	o.Format("2016-01-02 15:04:05"),
+		//	t.Format("2016-01-02 15:04:05"))
 	}
 
 	return t
