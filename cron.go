@@ -138,7 +138,7 @@ func (c *Cron) AddDelayJob(spec string, delayRange int, cmd Job) error {
 	if err != nil {
 		return err
 	}
-	c.NameAndDelaySchedule("", schedule, 0, cmd)
+	c.NameAndDelaySchedule("", schedule, delayRange, cmd)
 	return nil
 }
 
